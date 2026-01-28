@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>LiveStudy</title>
+  <style>
+    body { font-family: sans-serif; background: #0f0f0f; color: white; text-align: center; }
+    button { padding: 10px; margin: 5px; }
+  </style>
+</head>
+<body>
+
+<h1>LiveStudy</h1>
+<input id="name" placeholder="Name" />
+<input id="room" placeholder="Room Code" />
+<button onclick="join()">Join</button>
+
+<h2 id="q"></h2>
+<div id="answers"></div>
+
+<script>
+let ws;
+
+function join() {
+  ws = new WebSocket("ws://localhost:3000");
+  ws.onopen = () => {
+    ws.send(JSON.stringify({
+      type: "join",
+      name: name.value,
+      room: room.value
+    }));
+  };
+
+  ws.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.type === "question") {
+      q.innerText = data.question;
+      answers.innerHTML = "";
+      data.answers.forEach((a, i) => {
+        const b = document.createElement("button");
+        b.innerText = a;
+        b.onclick = () => ws.send(JSON.stringify({ type: "answer", answer: i }));
+        answers.appendChild(b);
+      });
+    }
+    if (data.type === "end") {
+      q.innerText = "Game Over";
+      answers.innerHTML = data.scores.map(s =>
+        `<p>${s.name}: ${s.score}</p>`
+      ).join("");
+    }
+  };
+}
+</script>
+</body>
+</html>
